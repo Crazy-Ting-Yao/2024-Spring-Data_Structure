@@ -2,3 +2,6 @@
 .vs
 *.exe
 \build
+*.out
+*.in
+.DS_Store
