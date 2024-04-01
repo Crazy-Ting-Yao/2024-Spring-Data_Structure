@@ -5,3 +5,5 @@
 *.out
 *.in
 .DS_Store
+.cph
+*.bin
