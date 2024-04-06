@@ -41,7 +41,8 @@ class Arena{
         void freeNode(Node *node);
         void attack(Node *node, int damage);
         void evolve(Node *node);
-        void reverse(Node *start, Node *end);
+        static void reverse(Node *start, Node *end);
+        static void swap(Node *a, Node *b);
 };
 
 int main(){
@@ -228,15 +229,7 @@ void Arena::Shuffle(char c, int count){
         }
     }
     Node temp;
-    temp.val = target->val;
-    temp.health = target->health;
-    temp.level = target->level;
-    target->val = shift->val;
-    target->health = shift->health;
-    target->level = shift->level;
-    shift->val = temp.val;
-    shift->health = temp.health;
-    shift->level = temp.level;
+    swap(target, shift);
     target = shift;
 }
 
@@ -267,4 +260,17 @@ void Arena::print(){
         std::cout<<"ID: "<<temp->val<<" HP: "<<temp->health<<" LVL: "<<temp->level<<std::endl;
         temp = temp->clockwise;
     }
+}
+
+void Arena::swap(Node *a, Node *b){
+    Node temp;
+    temp.val = a->val;
+    temp.health = a->health;
+    temp.level = a->level;
+    a->val = b->val;
+    a->health = b->health;
+    a->level = b->level;
+    b->val = temp.val;
+    b->health = temp.health;
+    b->level = temp.level;
 }
