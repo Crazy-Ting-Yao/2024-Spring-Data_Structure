@@ -6,7 +6,8 @@
 struct route{
     int src;
     int dst;
-    route(int s, int d){
+    int ts;
+    route(int s, int d, int t) : ts(t) {
         if(s < d){
             src = s;
             dst = d;
@@ -23,25 +24,14 @@ struct route{
     }
 };
 
-struct routeinfo{
-    int dist;
-    int ts;
-    routeinfo(int d, int t){
-        dist = d;
-        ts = t;
-    }
-    routeinfo(const routeinfo& ri){
-        dist = ri.dist;
-        ts = ri.ts;
-    }
-};
 
 struct path{
     int src;
     int dest;
     int dist;
+    int ts;
     std::vector<int> via;
-    path(int s, int d, int di){
+    path(int s, int d, int di, int t) : ts(t) {
         src = s;
         dest = d;
         dist = di;
@@ -50,6 +40,7 @@ struct path{
         src = p.src;
         dest = p.dest;
         dist = p.dist;
+        ts = p.ts;
         via = p.via;
     }
     bool operator>(const path& p) const{
@@ -80,7 +71,7 @@ class myPriorityQueue{
 
 struct node{
     int id;
-    std::vector<int> connected_nodes;
+    myPriorityQueue connected_nodes;
     int deliverymans;
 };
 
@@ -93,7 +84,7 @@ class myMap{
         void Complete(int id);
     private: 
         node *nodes;
-        std::map<route, routeinfo> routeinfos;
+        std::map<route, int> route_dis_check;
         std::map<int, order> orders;
         void update_ts(int src, std::vector<int> via, int ts);
         int nodes_count;
@@ -170,10 +161,10 @@ myMap::myMap(){
         std::string EDGE;
         int src, dst, dist, ts;
         std::cin >> EDGE >> src >> dst >> dist >> ts;
-        route newroute(src, dst);
-        routeinfos.insert(std::pair<route, routeinfo>(newroute, routeinfo(dist, ts)));
-        nodes[src].connected_nodes.push_back(dst);
-        nodes[dst].connected_nodes.push_back(src);
+        route newroute(src, dst, ts);
+        route_dis_check.insert(std::pair<route, int>(newroute, dist));
+        nodes[src].connected_nodes.push(path(src, dst, dist, ts));
+        nodes[dst].connected_nodes.push(path(dst, src, dist, ts));
     }
 }
 
@@ -192,41 +183,41 @@ void myMap::Order(int id, int src, int ts){
         return;
     }
     myPriorityQueue pq;
-    path start(src, src, 0);
+    path start(src, src, 0, ts);
     pq.push(start);
     bool *passed = new bool[nodes_count];
     for(int i=0;i<nodes_count;i++)
         passed[i] = false;
     passed[src] = true;
+    neworder.ts = ts;
+    neworder.paths = nullptr;
     while(!pq.isempty()){
         path current = pq.pop();
-        if(nodes[current.dest].deliverymans > 0){
-            order neworder;
-            neworder.ts = ts;
-            neworder.paths = new path(current);
-            orders[id] = neworder;
-            nodes[current.dest].deliverymans--;
-            update_ts(current.src, current.via, ts * -1);
-            delete[] passed;
-            std::cout << "Order " << id << " from: " << current.dest << std::endl;
-            return;
-        }
-        for(auto node : nodes[current.dest].connected_nodes){
+        for(auto node_paths : nodes[current.dest].connected_nodes.data){
+            int node = node_paths.dest;
             if(passed[node]) continue;
+            std::cout << node << std::endl;
             passed[node] = true;
-            route currentroute(current.dest, node);
-            routeinfo currentrouteinfo(routeinfos.find(currentroute)->second);
-            if(currentrouteinfo.ts >= ts){
-                path newpath(current);
-                newpath.dest = node;
-                newpath.dist += currentrouteinfo.dist;
-                newpath.via.push_back(current.dest);
-                pq.push(newpath);
-                
+            if(neworder.paths != nullptr && current.dist >= neworder.paths->dist){
+                delete[] passed;
+                std::cout << "Order " << id << " from: " << current.dest << std::endl;
+                nodes[neworder.paths->dest].deliverymans--;
+                update_ts(src, neworder.paths->via, ts*-1);
+                orders.insert(std::pair<int, order>(id, neworder));
+                return;
             }
+            
         }
     }
+    
     delete[] passed;
+    if(neworder.paths != nullptr){
+        std::cout << "Order " << id << " from: " << neworder.paths->dest << std::endl;
+        nodes[neworder.paths->dest].deliverymans--;
+        update_ts(src, neworder.paths->via, ts*-1);
+        orders.insert(std::pair<int, order>(id, neworder));
+        return;
+    }
     std::cout << "Just walk. T-T" << std::endl;
 }
 
@@ -241,7 +232,7 @@ void myMap::Complete(int id){
 void myMap::update_ts(int src, std::vector<int> via, int ts){
     int from = src;
     for(int i=0;i<via.size();i++){
-        route newroute(from, via[i]);
+        route newroute(from, via[i], 0);
         routeinfos.find(newroute)->second.ts += ts;
         from = via[i];
     }
