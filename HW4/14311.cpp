@@ -30,12 +30,28 @@ struct routeinfo{
         dist = d;
         ts = t;
     }
+    routeinfo(const routeinfo& ri){
+        dist = ri.dist;
+        ts = ri.ts;
+    }
 };
 
 struct path{
     int src;
     int dest;
     int dist;
+    std::vector<int> via;
+    path(int s, int d, int di){
+        src = s;
+        dest = d;
+        dist = di;
+    }
+    path(const path& p){
+        src = p.src;
+        dest = p.dest;
+        dist = p.dist;
+        via = p.via;
+    }
     bool operator>(const path& p) const{
         if (dist == p.dist)
             return dest > p.dest;
@@ -44,10 +60,12 @@ struct path{
 };
 
 struct order{
-    int id;
-    int src;
     int ts;
-    std::vector<path> paths;
+    path *paths;
+    ~order(){
+        if(paths != nullptr)
+            delete paths;
+    }
 };
 
 class myPriorityQueue{
@@ -74,12 +92,11 @@ class myMap{
         void Drop(int id, int dst);
         void Complete(int id);
     private: 
-        std::vector<order> orders;
-        node* nodes;
-        std::vector<path> DijsktraForOrder(int src, int ts);
-        std::vector<path> Route(int src, int dst);
-        void DijkstraForDrop(int src, int dst);
+        node *nodes;
         std::map<route, routeinfo> routeinfos;
+        std::map<int, order> orders;
+        void update_ts(int src, std::vector<int> via, int ts);
+        int nodes_count;
 };
 
 int main(){
@@ -121,6 +138,7 @@ void myPriorityQueue::push(path newdata){
             return;
         }
     }
+    data.push_back(newdata);
 }
 
 path myPriorityQueue::pop(){
@@ -136,21 +154,24 @@ bool myPriorityQueue::isempty(){
 myMap::myMap(){
     int v, e, d;
     std::cin >> v >> e >> d;
-    nodes = new node[v];
-    for (int i = 0; i < v; i++){
+    nodes_count = v+1;
+    nodes = new node[v+1];
+    for(int i=0;i<=v;i++){
         nodes[i].id = i;
         nodes[i].deliverymans = 0;
     }
     for(int i=0;i<d;i++){
-        int id, num;
-        std::cin >> id >> num;
-        nodes[id].deliverymans = num;
+        std::string PLACE;
+        int vertex, count;
+        std::cin >> PLACE >> vertex >> count;
+        nodes[vertex].deliverymans = count;
     }
     for(int i=0;i<e;i++){
+        std::string EDGE;
         int src, dst, dist, ts;
-        std::cin >> src >> dst >> dist >> ts;
-        route r(src, dst);
-        routeinfos[r] = routeinfo(dist, ts);
+        std::cin >> EDGE >> src >> dst >> dist >> ts;
+        route newroute(src, dst);
+        routeinfos.insert(std::pair<route, routeinfo>(newroute, routeinfo(dist, ts)));
         nodes[src].connected_nodes.push_back(dst);
         nodes[dst].connected_nodes.push_back(src);
     }
@@ -163,17 +184,65 @@ myMap::~myMap(){
 
 void myMap::Order(int id, int src, int ts){
     order neworder;
-    neworder.id = id;
-    neworder.src = src;
-    neworder.ts = ts;
-    neworder.paths = DijsktraForOrder(src, ts);
-    orders.push_back(neworder);
+    if(nodes[src].deliverymans > 0){
+        neworder.ts = ts;
+        neworder.paths = nullptr;
+        orders[id] = neworder;
+        nodes[src].deliverymans--;
+        return;
+    }
+    myPriorityQueue pq;
+    path start(src, src, 0);
+    pq.push(start);
+    bool *passed = new bool[nodes_count];
+    for(int i=0;i<nodes_count;i++)
+        passed[i] = false;
+    passed[src] = true;
+    while(!pq.isempty()){
+        path current = pq.pop();
+        if(nodes[current.dest].deliverymans > 0){
+            order neworder;
+            neworder.ts = ts;
+            neworder.paths = new path(current);
+            orders[id] = neworder;
+            nodes[current.dest].deliverymans--;
+            update_ts(current.src, current.via, ts * -1);
+            delete[] passed;
+            std::cout << "Order " << id << " from: " << current.dest << std::endl;
+            return;
+        }
+        for(auto node : nodes[current.dest].connected_nodes){
+            if(passed[node]) continue;
+            passed[node] = true;
+            route currentroute(current.dest, node);
+            routeinfo currentrouteinfo(routeinfos.find(currentroute)->second);
+            if(currentrouteinfo.ts >= ts){
+                path newpath(current);
+                newpath.dest = node;
+                newpath.dist += currentrouteinfo.dist;
+                newpath.via.push_back(current.dest);
+                pq.push(newpath);
+                
+            }
+        }
+    }
+    delete[] passed;
+    std::cout << "Just walk. T-T" << std::endl;
 }
 
 void myMap::Drop(int id, int dst){
-    //
+
 }
 
 void myMap::Complete(int id){
-    //
+
+}
+
+void myMap::update_ts(int src, std::vector<int> via, int ts){
+    int from = src;
+    for(int i=0;i<via.size();i++){
+        route newroute(from, via[i]);
+        routeinfos.find(newroute)->second.ts += ts;
+        from = via[i];
+    }
 }
