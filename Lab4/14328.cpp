@@ -3,12 +3,11 @@
 #include <list>
 #include <vector>
 #include <climits>
-using namespace std;
 class Graph{
     public:
     Graph(int v){
         this->v = v;
-        adj = new list<std::pair<int,int>>[v];
+        adj = new std::list<std::pair<int,int>>[v];
         passed = new bool[v];
     }
     ~Graph(){
@@ -16,7 +15,7 @@ class Graph{
         delete[] passed;
     }
     void addEdge(int u, int v, int w){
-        adj[u].push_back(make_pair(v,w));
+        adj[u].push_back(std::make_pair(v,w));
     }
     long long First_Dijkstra(int src, int dest){
         for(int i=0; i<v; i++)
@@ -76,38 +75,38 @@ class Graph{
     }
     private:
     int v;
-    list<std::pair<int,int>> *adj;
+    std::list<std::pair<int,int>> *adj;
     int dest;
     bool *passed;
 };
 
 int main(){
     int v, e;
-    cin >> v >> e;
+    std::cin >> v >> e;
     Graph g(v);
     for(int i=0; i<e; i++){
         int u, v, w;
-        cin >> u >> v >> w;
+        std::cin >> u >> v >> w;
         g.addEdge(u,v,w);
     }
     int t;
-    cin >> t;
+    std::cin >> t;
     if(t == 1){
         int src, dest;
-        cin >> src >> dest;
-        cout << g.First_Dijkstra(src, dest) << endl;
+        std::cin >> src >> dest;
+        std::cout << g.First_Dijkstra(src, dest) << std::endl;
     }
     else if(t == 2){
         int src1, src2, dest;
-        cin >> src1 >> src2 >> dest;
+        std::cin >> src1 >> src2 >> dest;
         long long first = g.First_Dijkstra(src1, dest);
         if(first == -1){
-            cout << -1 << endl;
+            std::cout << -1 << std::endl;
             return 0;
         }
         long long second = g.Second_Dijkstra(src2);
         if(second == -1){
-            cout << -1 << endl;
+            std::cout << -1 << std::endl;
             return 0;
         }
         long long a = first + second;
