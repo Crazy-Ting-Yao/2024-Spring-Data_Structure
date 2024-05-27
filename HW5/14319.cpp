@@ -1,8 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <ctime>
-#include <random>
+
 struct date{
     int year;
     int month;
@@ -24,16 +23,6 @@ struct patient {
     bool ismember;
     date membership;
     int id;
-    bool operator<=(const patient& p) const {
-        if(ismember != p.ismember) return p.ismember;
-        if(!ismember && !p.ismember) {
-            if(name == p.name) return id >= p.id;
-            return name >= p.name;
-        }
-        if(membership != p.membership) return membership > p.membership;
-        if(name == p.name) return id >= p.id;
-        return name > p.name;
-    }
     bool operator<(const patient& p) const {
         if(ismember != p.ismember) return p.ismember;
         if(!ismember && !p.ismember) {
@@ -43,11 +32,6 @@ struct patient {
         if(membership != p.membership) return membership > p.membership;
         if(name == p.name) return id > p.id;
         return name > p.name;
-    }
-    bool operator>=(const patient& p) const {
-        if(money == p.money) return id <= p.id;
-        return money > p.money;
-        
     }
     bool operator>(const patient& p) const {
         if(money == p.money) return id < p.id;
@@ -186,7 +170,7 @@ void maxheap_panda::insert(patient p){
     heap.push_back(p);
     int idx = heap.size()-1;
     while(idx > 1){
-        if(heap[idx] <= heap[idx/2]) break;
+        if(heap[idx] < heap[idx/2]) break;
         std::swap(heap[idx], heap[idx/2]);
         idx /= 2;
     }
@@ -200,7 +184,7 @@ patient maxheap_panda::pop(){
     while(2*idx < heap.size()){
         int next = 2*idx;
         if(next+1 < heap.size() && heap[next] < heap[next+1]) next++;
-        if(heap[next] <= heap[idx]) break;
+        if(heap[next] < heap[idx]) break;
         std::swap(heap[idx], heap[next]);
         idx = next;
     }
@@ -211,7 +195,7 @@ void maxheap_bear::insert(patient p){
     heap.push_back(p);
     int idx = heap.size()-1;
     while(idx > 1){
-        if(heap[idx/2] >= heap[idx]) break;
+        if(heap[idx/2] > heap[idx]) break;
         std::swap(heap[idx], heap[idx/2]);
         idx /= 2;
     }
@@ -225,7 +209,7 @@ patient maxheap_bear::pop(){
     while(2*idx < heap.size()){
         int next = 2*idx;
         if(next+1 < heap.size() && heap[next+1] > heap[next]) next++;
-        if(heap[idx] >= heap[next]) break;
+        if(heap[idx] > heap[next]) break;
         std::swap(heap[idx], heap[next]);
         idx = next;
     }
